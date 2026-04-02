@@ -1,21 +1,21 @@
 package main
 
 import (
+	"Re/server"
+	storage "Re/storage"
 	"fmt"
 	"net/http"
 )
 
 func main() {
-	fmt.Println("Hello world!")
+	http.HandleFunc("/Price", server.PriceRequest)
+	http.HandleFunc("/History", storage.ShowHistory)
+
+	err := http.ListenAndServe(":9090", nil)
+	if err != nil {
+		fmt.Println("Smth goes wrong:", err.Error())
+	}
+
 }
 
-func (h *UserHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-
-}
-
-type UserHandler struct {
-	DB     string // В реальном коде здесь будет *sql.DB
-	Logger string
-}
-
-123123 456456
+// пусковик хоста, содержит все хендлеры
