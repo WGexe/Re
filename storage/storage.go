@@ -3,17 +3,19 @@ package storage
 import (
 	"encoding/json"
 	"fmt"
-	"net/http"
 	"os"
 	"strings"
+	"time"
 )
 
-func WriteHistory(ticker string, price string, time string) {
+func WriteHistory(ticker string, price string) {
 
-	entry := HistoryEntry{
+	t := time.Now().Format(time.RFC3339)
+
+	entry := HistoryStruct{
 		Symbol: ticker,
 		Price:  price,
-		Time:   time,
+		Time:   t,
 	} // структура которую будем писать в файл
 
 	data, err := json.Marshal(entry)
@@ -29,45 +31,44 @@ func WriteHistory(ticker string, price string, time string) {
 	}
 	defer file.Close()
 
-	fmt.Println("DATA TO WRITE:", string(data))
+	fmt.Println("DATA TO WRITE:", string(data)) // проверка выводит инфу для записи в консоль
 	file.Write(data)
 
 }
 
-type HistoryEntry struct {
+type HistoryStruct struct {
 	Symbol string `json:"symbol"`
 	Price  string `json:"price"`
 	Time   string `json:"time"`
-}
+} //структура в которую мы собираем входящие данные для записи и данные истории для вывода
 
-func ShowHistory(w http.ResponseWriter, r *http.Request) {
+func ReadHistory() []HistoryStruct {
 
 	data, err := os.ReadFile("History.txt")
 	if err != nil {
 		fmt.Println("Reading history error", err.Error())
 	}
 
-	lines := strings.Split(string(data), "\n")
+	lines := strings.Split(string(data), "\n") //раскидываем по строкам инфу из файла и собираем в одну переменную
 
-	list := []HistoryEntry{}
+	list := []HistoryStruct{} //массив из структур в которых хранятся наши данные
 
-	for _, line := range lines {
+	for _, line := range lines { //в цикле прогоняем каждую строку
 
 		if line == "" {
 			continue
 		} // Пропускаем пустые строки
 
-		oneBox := HistoryEntry{}
+		oneBox := HistoryStruct{} //структура в которую формируются данные одной строки для записи в массив
 		err := json.Unmarshal([]byte(line), &oneBox)
 		if err != nil {
 			continue // Если одна строка битая — не ломаем всё остальное
 		}
 
-		list = append(list, oneBox)
+		list = append(list, oneBox) // собираем все вместе
 	}
 
-	w.Header().Set("Content-Type", "application/json") // Обязательно!
-	json.NewEncoder(w).Encode(list)                    // Всё. Одной строкой.
+	return list
 
 }
 

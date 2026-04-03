@@ -1,36 +1,42 @@
 package logic
 
+import (
+	"encoding/json"
+	"net/http"
+)
+
 func MakeApiUrl(ticker string) string {
 	apiURL := "https://api.kucoin.com/api/v1/market/orderbook/level1?symbol=" + ticker + "-USDT"
 	return apiURL
+	//собираем URL в формате для конкретной площадки
 
 }
 
-// type Response struct {
-// 	Message string `json:"message"`
-// 	Status  int    `json:"status"`
-// }
+func TakePrice(symbol string) (string, error) {
 
-// func ResponseTiker() {
+	TickerURL := MakeApiUrl(symbol) //подставляем наш тикер в создатель url
 
-// 	res := Response{
-// 		Message: "Привет, Postman! Твой Go-бэкенд работает.",
-// 		Status:  200,
-// 	}
+	ticker, err := http.Get(TickerURL) // get запрос на api kucoin, в ответ получаем кодированный джейсон с тикером
 
-// 	w.Header().Set("Content-Type", "application/json")
+	if err != nil {
+		return "", err // Просто передаем плохую новость наверх
+	}
 
-// 	json.NewEncoder(w).Encode(res)
+	defer ticker.Body.Close()
 
-// }
+	var ConvertedTiker struct {
+		Data struct {
+			Price string `json:"price"` // Это "полка" для цены
+		} `json:"data"` // Это "полка" для объекта data
+	} //структура по форме ответов kucoin, для временного храниения декодированной из джейсона информации
+
+	if err := json.NewDecoder(ticker.Body).Decode(&ConvertedTiker); err != nil {
+		return "", err // Если биржа прислала "кривой" ответ — выходим
+	} // декодировали джейсон и записали во временную структуру
+
+	price := ConvertedTiker.Data.Price //вытащили поле price из декодированного джейсона
+
+	return price, err
+}
 
 // расчеты, походы во внешние API
-
-// программа должна:
-// принимать запрос с именем койна (вызов должен быть через json)
-// отправлять запрос на соответоствующий апи (хз как работать со сторонними апи, для начала юзать биток или что проще всего)
-// получать ответ от апи со стоимостью койна (тот-же прикол, но еще ответ нужно выводить в консоль)
-// записывать в историю каждый запрос и его данные (делается автоматом при запросе = вызывается из функции запроса т.е. яв-ся его частью и пишется в мапу где ключ-порядковый №, а в данных структуры HistoryCell, должен писать ошибку при неудаче и т.п.)
-// иметь метод запроса истории (для начала сойдет полный вывод всей истории в консоль через println)
-// принцип ООП одна цель - один файл - файлы не знаю о существовании друг друга
-//
